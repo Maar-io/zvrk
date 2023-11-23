@@ -3,6 +3,7 @@ import styles from "../styles/Home.module.css";
 // import Image from "next/image";
 import { NextPage } from "next";
 import TransactionsTable from "./TransactionsTable";
+import PreConnect from "./PreConnect";
 
 const Home: NextPage = () => {
 
@@ -12,18 +13,23 @@ const Home: NextPage = () => {
   return (
     <main className={styles.main}>
       <div className={styles.container}>
+        {address ? (
+          <>
         <div className={styles.header}>
-          <ConnectWallet
-            dropdownPosition={{
-              side: "top",
-              align: "end",
-            }}
-          />
+              <ConnectWallet
+                dropdownPosition={{
+                  side: "top",
+                  align: "end",
+                }}
+              />
         </div>
-        <div>
-          {address && <TransactionsTable address={address} />}
-          {!address && ("Just connect your wallet and let's see how much you've spent on zkAstar, and compare it with what it would have cost on the Ethereum mainnet.")}
-        </div>
+            <div>
+              <TransactionsTable address={address} />
+            </div>
+          </>
+        ) : (
+          <PreConnect/>
+        )}
       </div>
     </main>
   );

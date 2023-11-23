@@ -5,6 +5,7 @@ body {
   padding: 0;
   margin: 0;
   font-family: "Inter", sans-serif;
+  background-color: #ffffcc;
 }
 
 a {
@@ -14,11 +15,6 @@ a {
 
 * {
   box-sizing: border-box;
-}
-
-body {
-  color: #e7e8e8;
-  background: #070707;
 }
 
 .header {

@@ -7,6 +7,7 @@ import axios from "axios";
 import { Network, Alchemy } from "alchemy-sdk";
 const { Utils } = require("alchemy-sdk");
 import styles from "../styles/Home.module.css";
+import { get } from "http";
 
 interface TransactionData {
   hash: string;
@@ -26,7 +27,6 @@ const ETHERSCAN_API_KEY = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY;
 console.log("etherscan key set", !!ETHERSCAN_API_KEY);
 const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
 console.log("alchemy key set", !!ALCHEMY_API_KEY);
-const ETH_PRICE_USD = 2000;
 
 const alchemySettings = {
   apiKey: ALCHEMY_API_KEY,
@@ -77,7 +77,6 @@ function getTimeDifference(targetTimestamp: number, blockTimestamp: number): str
 }
 
 function getDateString(timestamp: number) {
-  // const timestamp: number = parseInt(transaction.timeStamp.toString());
   const dateObject = new Date(timestamp * 1000);
   const day = String(dateObject.getDate()).padStart(2, "0");
   const month = String(dateObject.getMonth() + 1).padStart(2, "0"); // January is 0!
@@ -129,6 +128,7 @@ function TransactionsTable({ address }: { address: string }) {
   const [totalTxZkCostUSD, setTotalTxZkCostUSD] = useState<number>(0);
   const [totalTxEthCostUSD, setTotalTxEthCostUSD] = useState<number>(0);
   const [saving, setSaving] = useState<number>(0);
+  const [ethPriceToday, setEthPriceToday] = useState<number>(0);
 
   useEffect(() => {
     getTransactionData(address).then((data) => {
@@ -155,6 +155,13 @@ function TransactionsTable({ address }: { address: string }) {
     const transactions = await getTransactions(address);
     const parsedTransactions: TransactionData[] = [];
 
+    // get eth price today
+    const [date, ] = getDateString((Date.now() / 1000));
+
+    const ethPriceToday = await getHistoricalPrice(date as string);
+    console.log(`today ${date} eth price is ${ethPriceToday}`);
+    setEthPriceToday(ethPriceToday);
+
     // iterate over transactions on zk Node
     transactions.forEach(
       async (transaction: {
@@ -176,7 +183,7 @@ function TransactionsTable({ address }: { address: string }) {
         // }
         const gasUsed = transaction.gasUsed;
         const gasPrice = transaction.gasPrice;
-        const txZkCostUSD = (gasUsed * gasPrice * ETH_PRICE_USD) / 1e18;
+        const txZkCostUSD = (gasUsed * gasPrice * ethPriceToday) / 1e18;
         totalZkCost += txZkCostUSD;
         saving -= txZkCostUSD;
         totalGasUsed += Number(gasUsed);
@@ -216,7 +223,7 @@ function TransactionsTable({ address }: { address: string }) {
       const ethGasPrice = await getGasPriceOnEth(transactions[i].unixTimestamp);
       const ethGasPriceEth = Utils.formatEther(ethGasPrice);
       const txEthCostUSD =
-        Number(transactions[i].gasUsed) * ETH_PRICE_USD * ethGasPriceEth;
+        Number(transactions[i].gasUsed) * ethPriceToday * ethGasPriceEth;
       totalTxEthCostUSD += txEthCostUSD;
       saving += txEthCostUSD;
       const diffUSD = txEthCostUSD - Number(transactions[i].txZkCostUSD);
@@ -271,6 +278,9 @@ function TransactionsTable({ address }: { address: string }) {
         </p>
         <p className={styles['large-text']}>
           Good news is, by using  Astar zkEVM, you've saved a cool ${(totalTxEthCostUSD - totalTxZkCostUSD).toFixed(2)}!
+        </p>
+        <p className={styles.grayText}>
+          The calculation is based on today's price of Ethereum ${ethPriceToday.toFixed(0)}.
         </p>
       </div>
       <table className={styles.table}>
