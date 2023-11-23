@@ -236,46 +236,46 @@ function TransactionsTable({ address }: { address: string }) {
 
   return (
     <>
-<div className={styles.container}>
-  <div className={styles.box}>
-    <h3>Transactions Count</h3>
-    <p>{transactionsCount}</p>
-  </div>
-  <div className={styles.box}>
-    <h3>Total Gas Used</h3>
-    <p>{totalGasUsed}</p>
-  </div>
-  <div className={styles.box}>
-    <h3>Cost on Astar zkEVM</h3>
-    <p>${totalTxZkCostUSD.toFixed(3)}</p>
-  </div>
-  <div className={styles.box}>
-    <h3>Cost on Ethereum Mainnet</h3>
-    <p>${totalTxEthCostUSD.toFixed(2)}</p>
-  </div>
-  <div className={styles.box}>
-    <h3>Savings</h3>
-    <p>${(totalTxEthCostUSD - totalTxZkCostUSD).toFixed(2)}</p>
-  </div>
-</div>
-<div className={styles.box}>
-    <h2 className={styles['text-center']}>{address}</h2>
-  <p className={styles['large-text']}>
-    Hey there! You've made {transactionsCount} transactions with this address and used up {totalGasUsed} gas.
-  </p>
-  <p className={styles['large-text']}>
-    That cost you ${totalTxZkCostUSD.toFixed(3)} on Astar zkEVM.
-  </p>
-  <p className={styles['large-text']}>
-    If you had done the same transactions on the Ethereum mainnet, it would have cost you ${totalTxEthCostUSD.toFixed(2)}.
-  </p>
-  <p className={styles['large-text']}>
-    Good news is, by using  Astar zkEVM, you've saved a cool ${(totalTxEthCostUSD - totalTxZkCostUSD).toFixed(2)}!
-  </p>
-</div>
+      <div className={styles.container}>
+        <div className={styles.box}>
+          <h3>Transactions Count</h3>
+          <p>{transactionsCount}</p>
+        </div>
+        <div className={styles.box}>
+          <h3>Total Gas Used</h3>
+          <p>{totalGasUsed}</p>
+        </div>
+        <div className={styles.box}>
+          <h3>Cost on Astar zkEVM</h3>
+          <p>${totalTxZkCostUSD.toFixed(3)}</p>
+        </div>
+        <div className={styles.box}>
+          <h3>Cost on Ethereum</h3>
+          <p>${totalTxEthCostUSD.toFixed(2)}</p>
+        </div>
+        <div className={styles.box}>
+          <h3>Savings</h3>
+          <p>${(totalTxEthCostUSD - totalTxZkCostUSD).toFixed(2)}</p>
+        </div>
+      </div>
+      <div className={styles.box}>
+        <h2 className={styles['text-center']}>{address}</h2>
+        <p className={styles['large-text']}>
+          Hey there! You've made {transactionsCount} transactions with this address and used up {totalGasUsed} gas.
+        </p>
+        <p className={styles['large-text']}>
+          That cost you ${totalTxZkCostUSD.toFixed(3)} on Astar zkEVM.
+        </p>
+        <p className={styles['large-text']}>
+          If you had done the same transactions on the Ethereum mainnet, it would have cost you ${totalTxEthCostUSD.toFixed(2)}.
+        </p>
+        <p className={styles['large-text']}>
+          Good news is, by using  Astar zkEVM, you've saved a cool ${(totalTxEthCostUSD - totalTxZkCostUSD).toFixed(2)}!
+        </p>
+      </div>
       <table className={styles.table}>
         <thead>
-          <tr>
+          <tr className={styles['header-row']}>
             <th>#</th>
             <th>Transaction Hash</th>
             <th>Date</th>
