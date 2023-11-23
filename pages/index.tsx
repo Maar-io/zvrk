@@ -3,25 +3,33 @@ import styles from "../styles/Home.module.css";
 // import Image from "next/image";
 import { NextPage } from "next";
 import TransactionsTable from "./TransactionsTable";
-import { use } from "react";
+import PreConnect from "./PreConnect";
 
 const Home: NextPage = () => {
 
   const address: string | undefined = useAddress();
+  console.log("connected address", address);
+
   return (
     <main className={styles.main}>
       <div className={styles.container}>
+        {address ? (
+          <>
         <div className={styles.header}>
-          <ConnectWallet
-            dropdownPosition={{
-              side: "top",
-              align: "end", // Fix: Change "right" to "end"
-            }}
-          />
+              <ConnectWallet
+                dropdownPosition={{
+                  side: "top",
+                  align: "end",
+                }}
+              />
         </div>
-        <div>
-          {address && <TransactionsTable address={address} />}
-        </div>
+            <div>
+              <TransactionsTable address={address} />
+            </div>
+          </>
+        ) : (
+          <PreConnect/>
+        )}
       </div>
     </main>
   );

@@ -5,10 +5,11 @@ body {
   padding: 0;
   margin: 0;
   font-family: "Inter", sans-serif;
+  background-color: #ffffcc;
 }
 
 a {
-  color: #008080; /* Dark Turquoise */
+  color: #008080;
   text-decoration: none;
 }
 
@@ -16,13 +17,10 @@ a {
   box-sizing: border-box;
 }
 
-body {
-  color: #e7e8e8;
-  background: #070707;
+.header {
+  display: flex;
+  justify-content: flex-end;
 }
-
-
-
 
 a:hover {
   color: #AFEEEE; /* Light Turquoise on hover */
