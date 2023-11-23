@@ -23,6 +23,7 @@ const Home: NextPage = () => {
         </div>
         <div>
           {address && <TransactionsTable address={address} />}
+          {!address && ("Just connect your wallet and let's see how much you've spent on zkAstar, and compare it with what it would have cost on the Ethereum mainnet.")}
         </div>
       </div>
     </main>

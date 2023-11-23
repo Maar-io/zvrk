@@ -40,6 +40,7 @@ async function getTransactions(address: string) {
     `https://zkatana.blockscout.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=966666&page=1&offset=60&sort=asc`
   );
   // console.log("response", response.data.result);
+
   return response.data.result;
 }
 
@@ -108,11 +109,17 @@ function TransactionsTable({ address }: { address: string }) {
   const [data, setData] = useState<TransactionData[]>([]);
   const [isLoadingTxs, setIsLoadingTxs] = useState<boolean>(true);
   const [ethPriceFetched, setEthPriceFetched] = useState<boolean>(false);
+  const [transactionsCount, setTransactionsCount] = useState<number>(0);
+  const [totalGasUsed, setTotalGasUsed] = useState<number>(0);
+  const [totalTxZkCostUSD, setTotalTxZkCostUSD] = useState<number>(0);
+  const [totalTxEthCostUSD, setTotalTxEthCostUSD] = useState<number>(0);
+  const [saving, setSaving] = useState<number>(0);
 
   useEffect(() => {
     getTransactionData(address).then((data) => {
       setData(data);
       setIsLoadingTxs(false);
+      setTransactionsCount(data.length);
     });
     console.log("data", data);
   }, [address]);
@@ -125,9 +132,14 @@ function TransactionsTable({ address }: { address: string }) {
   }, [isLoadingTxs, data]);
 
   async function getTransactionData(address: string) {
-    const transactions = await getTransactions(address);
     let totalCost: number = 0;
+    let totalZkCost: number = 0;
+    let totalEthCost: number = 0;
+    let saving: number = 0;
+    let totalGasUsed: number = 0;
+    const transactions = await getTransactions(address);
     const parsedTransactions: TransactionData[] = [];
+
     // iterate over transactions on zk Node
     transactions.forEach(
       async (transaction: {
@@ -150,6 +162,9 @@ function TransactionsTable({ address }: { address: string }) {
         const gasUsed = transaction.gasUsed;
         const gasPrice = transaction.gasPrice;
         const txZkCostUSD = (gasUsed * gasPrice * ETH_PRICE_USD) / 1e18;
+        totalZkCost += txZkCostUSD;
+        saving -= txZkCostUSD;
+        totalGasUsed += Number(gasUsed);
         const shortHash =
           transaction.hash.slice(0, 6) + "..." + transaction.hash.slice(-4);
         const parsedTx: TransactionData = {
@@ -169,39 +184,27 @@ function TransactionsTable({ address }: { address: string }) {
         parsedTransactions.push(parsedTx);
       }
     );
+
+    setTotalGasUsed(totalGasUsed);
+    setSaving(saving);
+    setTotalTxZkCostUSD(totalZkCost);
     setIsLoadingTxs(false);
     return parsedTransactions;
   }
 
-  // async function getEthPrice(transactions: TransactionData[]) {
-  //   const updatedTransactions: TransactionData[] = [];
-
-  //   for (const transaction of transactions) {
-  //     const ethGasPrice = await getGasPriceOnEth(transaction.unixTimestamp);
-  //     const ethGasPriceEth = Utils.formatEther(ethGasPrice);
-  //     const txEthCostUSD = Number(transaction.gasUsed) * ETH_PRICE_USD * ethGasPriceEth;
-  //     const diffUSD = txEthCostUSD - Number(transaction.txZkCostUSD);
-  //     const updatedTransaction: TransactionData = {
-  //       ...transaction,
-  //       ethGasPrice: (Number(ethGasPrice) / 1000000000).toFixed(4).toString(),
-  //       txEthCostUSD,
-  //       diffUSD,
-  //     };
-  //     updatedTransactions.push(updatedTransaction);
-  //   }
-
-  //   setData(updatedTransactions);
-  // }
-
   async function getEthPrice(transactions: TransactionData[]) {
     let updatedTransactions: TransactionData[] = [...data];
+    let totalTxEthCostUSD: number = 0;
+    let saving: number = 0;
 
     for (let i = 0; i < transactions.length; i++) {
       const ethGasPrice = await getGasPriceOnEth(transactions[i].unixTimestamp);
       const ethGasPriceEth = Utils.formatEther(ethGasPrice);
-      const txEthCostUSD = Number(transactions[i].gasUsed) * ETH_PRICE_USD * ethGasPriceEth;
+      const txEthCostUSD =
+        Number(transactions[i].gasUsed) * ETH_PRICE_USD * ethGasPriceEth;
+      totalTxEthCostUSD += txEthCostUSD;
+      saving += txEthCostUSD;
       const diffUSD = txEthCostUSD - Number(transactions[i].txZkCostUSD);
-
       updatedTransactions[i] = {
         ...transactions[i],
         ethGasPrice: (Number(ethGasPrice) / 1000000000).toFixed(4).toString(),
@@ -209,13 +212,30 @@ function TransactionsTable({ address }: { address: string }) {
         diffUSD,
       };
 
+      setSaving(saving);
+      setTotalTxEthCostUSD(totalTxEthCostUSD);
+      setTotalTxEthCostUSD(totalTxEthCostUSD);
       setData([...updatedTransactions]);
     }
   }
 
   return (
     <>
-      <h1>{address}</h1>
+<div style={{ backgroundColor: '#AFEEEE', padding: '10px', borderRadius: '5px', color: 'black' }}>
+    <h2 style={{ textAlign: 'center' }}>{address}</h2>
+  <p style={{ fontSize: '1.5em', whiteSpace: 'pre-wrap', textAlign: 'center' }}>
+    Hey there! You've made {transactionsCount} transactions with this address and used up {totalGasUsed} gas.
+  </p>
+  <p style={{ fontSize: '1.5em', whiteSpace: 'pre-wrap', textAlign: 'center' }}>
+    That cost you ${totalTxZkCostUSD.toFixed(2)} on Astar zkEVM.
+  </p>
+  <p style={{ fontSize: '1.5em', whiteSpace: 'pre-wrap', textAlign: 'center' }}>
+    If you had done the same transactions on the Ethereum mainnet, it would have cost you ${totalTxEthCostUSD.toFixed(2)}.
+  </p>
+  <p style={{ fontSize: '1.5em', whiteSpace: 'pre-wrap', textAlign: 'center' }}>
+    Good news is, by using  Astar zkEVM, you've saved a cool ${(totalTxEthCostUSD - totalTxZkCostUSD).toFixed(2)}!
+  </p>
+</div>
       <table className={styles.table}>
         <thead>
           <tr>
