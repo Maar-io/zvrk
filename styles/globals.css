@@ -21,8 +21,10 @@ body {
   background: #070707;
 }
 
-
-
+.header {
+  display: flex;
+  justify-content: flex-end;
+}
 
 a:hover {
   color: #AFEEEE; /* Light Turquoise on hover */

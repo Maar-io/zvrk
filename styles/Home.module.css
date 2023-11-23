@@ -1,9 +1,4 @@
-.container {
-  width: 100%;
-  max-width: 1440px;
-  padding: 0 1rem;
-  margin: 0 auto;
-}
+
 
 .gradientText0 {
   background: -webkit-linear-gradient(#bfa3da, #84309c, #c735b0);
@@ -175,4 +170,38 @@
 
 .ethbg {
   background-color: rgb(16, 16, 112);
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  background-color: #AFEEEE;
+  padding: 10px;
+  border-radius: 5px;
+  color: black;
+}
+
+.box {
+  background-color: #BADA55;
+  padding: 10px;
+  border-radius: 5px;
+  border: 2px solid black;
+  margin: 10px;
+  flex: 1 0 200px; /* This allows the boxes to grow and shrink while not going below 200px */
+}
+
+.box h3 {
+  font-size: 1em;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.large-text {
+  font-size: 1.5em;
+  white-space: pre-wrap;
+  text-align: center;
 }

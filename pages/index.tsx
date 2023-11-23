@@ -3,7 +3,6 @@ import styles from "../styles/Home.module.css";
 // import Image from "next/image";
 import { NextPage } from "next";
 import TransactionsTable from "./TransactionsTable";
-import { use } from "react";
 
 const Home: NextPage = () => {
 
@@ -17,7 +16,7 @@ const Home: NextPage = () => {
           <ConnectWallet
             dropdownPosition={{
               side: "top",
-              align: "end", // Fix: Change "right" to "end"
+              align: "end",
             }}
           />
         </div>
