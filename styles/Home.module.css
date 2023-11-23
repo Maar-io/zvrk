@@ -254,4 +254,7 @@
   text-align: center;
   font-size: 30px; /* Adjust this value as needed */
   font-family: 'Londrina Solid', cursive; /* Add this line */
+  width: 50%; /* Set the width to 50% */
+  margin: 0 auto; /* Center the element */
+  margin-top: 200px;
 }

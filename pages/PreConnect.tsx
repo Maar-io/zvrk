@@ -6,7 +6,7 @@ export default function PreConnect() {
       <div className={styles.preConnect}>
         <img src="/images/whirligig.png" alt="Zvrk" className={styles.image} />
         <div>
-          <p className={styles.text}>Just connect your wallet and let's see how much you've spent on zkAstar, and compare it with what it would have cost on the Ethereum mainnet.</p>
+          <p className={styles.text}>Just connect your wallet and let's see how much you've spent on zkAstar, then compare it with what it would have cost on the Ethereum mainnet.</p>
           <ConnectWallet
             dropdownPosition={{
               side: "top",
@@ -17,4 +17,4 @@ export default function PreConnect() {
       </div>
     );
   }
-  
+
