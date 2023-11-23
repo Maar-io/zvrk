@@ -8,7 +8,6 @@ import { Network, Alchemy } from "alchemy-sdk";
 const { Utils } = require("alchemy-sdk");
 import styles from "../styles/Home.module.css";
 
-const ADDRESS = "0x00319D8f10A363252490cD2D4c58CFe571Da8288";
 const ETHERSCAN_API_KEY = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY;
 console.log("etherscan key set", !!ETHERSCAN_API_KEY);
 const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
@@ -16,17 +15,18 @@ console.log("alchemy key set", !!ALCHEMY_API_KEY);
 
 // Optional Config object, but defaults to demo api-key and eth-mainnet.
 const settings = {
-  apiKey: ALCHEMY_API_KEY, // Replace with your Alchemy API Key.
-  network: Network.ETH_MAINNET, // Replace with your network.
+  apiKey: ALCHEMY_API_KEY,
+  network: Network.ETH_MAINNET,
 };
 const alchemy = new Alchemy(settings);
 
 async function getTransactions(address: string) {
+  // `https://zkatana.blockscout.com/api/v2/addresses/${address}/transactions?filter=to%20%7C%20from`
   const response = await axios.get(
-    `https://zkatana.blockscout.com/api/v2/addresses/${address}/transactions?filter=to%20%7C%20from`
+    `https://zkatana.blockscout.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=966666&page=1&offset=60&sort=asc`
   );
-  console.log("response", response.data.items);
-  return response.data.items;
+  // console.log("response", response.data.result);
+  return response.data.result;
 }
 
 async function getHistoricalPrice(date: string) {
@@ -60,6 +60,19 @@ interface TransactionData {
   totalCost: number;
 }
 
+function getDateString(timestamp: number) {
+  // const timestamp: number = parseInt(transaction.timeStamp.toString());
+  const dateObject = new Date(timestamp * 1000);
+  const day = String(dateObject.getDate()).padStart(2, "0");
+  const month = String(dateObject.getMonth() + 1).padStart(2, "0"); // January is 0!
+  const year = dateObject.getFullYear();
+  const date = `${day}-${month}-${year}`;
+  const unixTimestamp = Math.floor(dateObject.getTime() / 1000);
+  console.log("transaction.timestamp, unixTimestamp", date, unixTimestamp);
+
+  return [date, unixTimestamp];
+}
+
 async function getTransactionData(
   updateData: (data: TransactionData) => void,
   address: string
@@ -69,18 +82,13 @@ async function getTransactionData(
   // iterate over transactions on zk Node
   transactions.forEach(
     async (transaction: {
-      timestamp: string | number | Date;
-      gas_used: any;
-      gas_price: any;
+      timeStamp: string | number | Date;
+      gasUsed: any;
+      gasPrice: any;
       hash: string;
     }) => {
-      const dateObject = new Date(transaction.timestamp);
-      const day = String(dateObject.getDate()).padStart(2, "0");
-      const month = String(dateObject.getMonth() + 1).padStart(2, "0"); // January is 0!
-      const year = dateObject.getFullYear();
-      const date = `${day}-${month}-${year}`;
-      const unixTimestamp = Math.floor(dateObject.getTime() / 1000);
-      let price_usd;
+      const [date, unixTimestamp] = getDateString(transaction.timeStamp as number);
+      let price_usd = 2000;
       // try {
       //   price_usd = await new Promise<number>((resolve) =>
       //     setTimeout(() => resolve(getHistoricalPrice(date)), 2000)
@@ -89,15 +97,12 @@ async function getTransactionData(
       //   price_usd = 2000;
       //   console.error('An error occurred:', error);
       // }
-      price_usd = 2000;
-      const ethGasPrice = await getGasPriceOnEth(unixTimestamp);
-      const gasUsed = transaction.gas_used;
-      const gasPrice = transaction.gas_price;
+      const ethGasPrice = await getGasPriceOnEth(unixTimestamp as number);
+      const gasUsed = transaction.gasUsed;
+      const gasPrice = transaction.gasPrice;
       const txZkCostUSD = (gasUsed * gasPrice * price_usd) / 1e18;
-      console.log("ethGasPrice", Utils.formatEther(ethGasPrice));
       const ethGasPriceEth = Utils.formatEther(ethGasPrice);
       const txEthCostUSD = gasUsed * price_usd * ethGasPriceEth;
-      // let totalZkCost = totalZkCost + txZkCostUSD;
       const shortHash =
         transaction.hash.slice(0, 6) + "..." + transaction.hash.slice(-4);
       console.log(
@@ -106,7 +111,7 @@ async function getTransactionData(
       const toPrint: TransactionData = {
         hash: transaction.hash,
         shortHash,
-        date,
+        date: String(date),
         gasUsed,
         zkGasPrice: (gasPrice / 1000000000).toFixed(4).toString(),
         txZkCostUSD: txZkCostUSD.toFixed(4).toString(),
@@ -123,7 +128,6 @@ async function getTransactionData(
 async function getGasPriceOnEth(targetTimestamp: number) {
   const averageBlockTime = 15.1;
   let block = await alchemy.core.getBlock("latest");
-  console.log("latest block", block);
   let blockNumber = block.number;
   let blockTime = block.timestamp;
   const decreaseBlocks = Math.floor(
@@ -132,7 +136,6 @@ async function getGasPriceOnEth(targetTimestamp: number) {
   blockNumber -= decreaseBlocks;
 
   // find blockhash to get first Tx.
-  console.log(`using Ethereum block={blockNumber} to get gasPrice`);
   block = await alchemy.core.getBlock(blockNumber);
 
   // get gasPrice from the first transaction in this block
@@ -143,9 +146,9 @@ async function getGasPriceOnEth(targetTimestamp: number) {
     transactions.transactions.length
   ) {
     console.log(
-      "Transaction[0] gasPrice:",
-      transactions.transactions[0].gasPrice?.toString()
-    );
+
+    `Ethereum gasPrice for block ${blockNumber} and first Tx is ${transactions.transactions[0].gasPrice}`)
+
   } else {
     console.log("No transactions found");
   }
@@ -173,15 +176,15 @@ function TransactionsTable({ address }: { address: string }) {
             <th>Gas Used</th>
             <th>zk Gas Price (GWEI)</th>
             <th>Value in USD</th>
-            <th className="eth-background">
+            <th className={styles.ethbg}>
 
               {/* <img src={eth} alt="Ethereum" style={{ height: '20px' }} /> */}
 
-              Gas Price (GWEI)
+              Eth Gas Price (GWEI)
             </th>
-            <th className="eth-background">
+            <th className={styles.ethbg}>
               {/* <img src={eth} alt="Ethereum" style={{ height: '20px' }} /> */}
-              Value in USD
+              Eth Value in USD
             </th>
             <th>Saving (USD)</th>
           </tr>
@@ -207,8 +210,8 @@ function TransactionsTable({ address }: { address: string }) {
               <td>{transaction.gasUsed}</td>
               <td>{transaction.zkGasPrice}</td>
               <td>{transaction.txZkCostUSD}</td>
-              <td className="eth-background">{transaction.ethGasPrice}</td>
-              <td className="eth-background">
+              <td className={styles.ethbg}>{transaction.ethGasPrice}</td>
+              <td className={styles.ethbg}>
                 {transaction.txEthCostUSD.toFixed(4)}
               </td>
               <td>{transaction.diffUSD.toFixed(4)}</td>
