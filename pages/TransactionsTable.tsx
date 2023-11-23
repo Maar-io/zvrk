@@ -1,5 +1,5 @@
 // TransactionsTable.tsx
-// import eth from '../public/images/eth.svg';
+// import eth from '../public/images/eth.svg";
 // import Image from "next/image";
 
 import React, { useEffect, useState } from "react";
@@ -179,7 +179,7 @@ function TransactionsTable({ address }: { address: string }) {
         //   );
         // } catch (error) {
         //   price_usd = 2000;
-        //   console.error('An error occurred:', error);
+        //   console.error("An error occurred:", error);
         // }
         const gasUsed = transaction.gasUsed;
         const gasPrice = transaction.gasPrice;
@@ -268,7 +268,7 @@ function TransactionsTable({ address }: { address: string }) {
       <div className={styles.box}>
         <h2 className={styles['text-center']}>{address}</h2>
         <p className={styles['large-text']}>
-          Hey there! You've made {transactionsCount} transactions with this address and used up {totalGasUsed} gas.
+          Hey there! You&apos;ve made {transactionsCount} transactions with this address and used up {totalGasUsed} gas.
         </p>
         <p className={styles['large-text']}>
           That cost you ${totalTxZkCostUSD.toFixed(3)} on Astar zkEVM.
@@ -277,10 +277,10 @@ function TransactionsTable({ address }: { address: string }) {
           If you had done the same transactions on the Ethereum mainnet, it would have cost you ${totalTxEthCostUSD.toFixed(2)}.
         </p>
         <p className={styles['large-text']}>
-          Good news is, by using  Astar zkEVM, you've saved a cool ${(totalTxEthCostUSD - totalTxZkCostUSD).toFixed(2)}!
+          Good news is, by using  Astar zkEVM, you&apos;ve saved a cool ${(totalTxEthCostUSD - totalTxZkCostUSD).toFixed(2)}!
         </p>
         <p className={styles.grayText}>
-          The calculation is based on today's price of Ethereum ${ethPriceToday.toFixed(0)}.
+          The calculation is based on today&apos;s price of Ethereum ${ethPriceToday.toFixed(0)}.
         </p>
       </div>
       <table className={styles.table}>
