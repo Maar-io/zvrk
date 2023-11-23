@@ -173,24 +173,44 @@ function TransactionsTable({ address }: { address: string }) {
     return parsedTransactions;
   }
 
-  async function getEthPrice(transactions: TransactionData[]) {
-    const updatedTransactions: TransactionData[] = [];
+  // async function getEthPrice(transactions: TransactionData[]) {
+  //   const updatedTransactions: TransactionData[] = [];
 
-    for (const transaction of transactions) {
-      const ethGasPrice = await getGasPriceOnEth(transaction.unixTimestamp);
+  //   for (const transaction of transactions) {
+  //     const ethGasPrice = await getGasPriceOnEth(transaction.unixTimestamp);
+  //     const ethGasPriceEth = Utils.formatEther(ethGasPrice);
+  //     const txEthCostUSD = Number(transaction.gasUsed) * ETH_PRICE_USD * ethGasPriceEth;
+  //     const diffUSD = txEthCostUSD - Number(transaction.txZkCostUSD);
+  //     const updatedTransaction: TransactionData = {
+  //       ...transaction,
+  //       ethGasPrice: (Number(ethGasPrice) / 1000000000).toFixed(4).toString(),
+  //       txEthCostUSD,
+  //       diffUSD,
+  //     };
+  //     updatedTransactions.push(updatedTransaction);
+  //   }
+
+  //   setData(updatedTransactions);
+  // }
+
+  async function getEthPrice(transactions: TransactionData[]) {
+    let updatedTransactions: TransactionData[] = [...data];
+
+    for (let i = 0; i < transactions.length; i++) {
+      const ethGasPrice = await getGasPriceOnEth(transactions[i].unixTimestamp);
       const ethGasPriceEth = Utils.formatEther(ethGasPrice);
-      const txEthCostUSD = Number(transaction.gasUsed) * ETH_PRICE_USD * ethGasPriceEth;
-      const diffUSD = txEthCostUSD - Number(transaction.txZkCostUSD);
-      const updatedTransaction: TransactionData = {
-        ...transaction,
+      const txEthCostUSD = Number(transactions[i].gasUsed) * ETH_PRICE_USD * ethGasPriceEth;
+      const diffUSD = txEthCostUSD - Number(transactions[i].txZkCostUSD);
+
+      updatedTransactions[i] = {
+        ...transactions[i],
         ethGasPrice: (Number(ethGasPrice) / 1000000000).toFixed(4).toString(),
         txEthCostUSD,
         diffUSD,
       };
-      updatedTransactions.push(updatedTransaction);
-    }
 
-    setData(updatedTransactions);
+      setData([...updatedTransactions]);
+    }
   }
 
   return (
