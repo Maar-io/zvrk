@@ -8,7 +8,7 @@ body {
 }
 
 a {
-  color: #84309c;
+  color: #008080; /* Dark Turquoise */
   text-decoration: none;
 }
 
@@ -19,4 +19,12 @@ a {
 body {
   color: #e7e8e8;
   background: #070707;
+}
+
+
+
+
+a:hover {
+  color: #AFEEEE; /* Light Turquoise on hover */
+  text-decoration: underline; /* Underline on hover */
 }

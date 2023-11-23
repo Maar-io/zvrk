@@ -13,6 +13,8 @@
   "dependencies": {
     "@thirdweb-dev/react": "^4",
     "@thirdweb-dev/sdk": "^4",
+    "alchemy-sdk": "^3.0.0",
+    "axios": "^1.6.2",
     "ethers": "^5",
     "next": "^13",
     "react": "^18.2",
