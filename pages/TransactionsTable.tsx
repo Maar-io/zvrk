@@ -8,17 +8,30 @@ import { Network, Alchemy } from "alchemy-sdk";
 const { Utils } = require("alchemy-sdk");
 import styles from "../styles/Home.module.css";
 
+interface TransactionData {
+  hash: string;
+  shortHash: string;
+  date: string;
+  unixTimestamp: number;
+  gasUsed: string;
+  zkGasPrice: string;
+  txZkCostUSD: string;
+  ethGasPrice: string | undefined;
+  txEthCostUSD: number;
+  diffUSD: number;
+  totalCost: number;
+}
+
 const ETHERSCAN_API_KEY = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY;
 console.log("etherscan key set", !!ETHERSCAN_API_KEY);
 const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
 console.log("alchemy key set", !!ALCHEMY_API_KEY);
 
-// Optional Config object, but defaults to demo api-key and eth-mainnet.
-const settings = {
+const alchemySettings = {
   apiKey: ALCHEMY_API_KEY,
   network: Network.ETH_MAINNET,
 };
-const alchemy = new Alchemy(settings);
+const alchemy = new Alchemy(alchemySettings);
 
 async function getTransactions(address: string) {
   // `https://zkatana.blockscout.com/api/v2/addresses/${address}/transactions?filter=to%20%7C%20from`
@@ -47,18 +60,7 @@ async function getGecko() {
   }
   getData();
 }
-interface TransactionData {
-  hash: string;
-  shortHash: string;
-  date: string;
-  gasUsed: string;
-  zkGasPrice: string;
-  txZkCostUSD: string;
-  ethGasPrice: string | undefined;
-  txEthCostUSD: number;
-  diffUSD: number;
-  totalCost: number;
-}
+
 
 function getDateString(timestamp: number) {
   // const timestamp: number = parseInt(transaction.timeStamp.toString());
@@ -67,62 +69,10 @@ function getDateString(timestamp: number) {
   const month = String(dateObject.getMonth() + 1).padStart(2, "0"); // January is 0!
   const year = dateObject.getFullYear();
   const date = `${day}-${month}-${year}`;
-  const unixTimestamp = Math.floor(dateObject.getTime() / 1000);
+  const unixTimestamp: number = Math.floor(dateObject.getTime() / 1000);
   console.log("transaction.timestamp, unixTimestamp", date, unixTimestamp);
 
   return [date, unixTimestamp];
-}
-
-async function getTransactionData(
-  updateData: (data: TransactionData) => void,
-  address: string
-): Promise<void> {
-  const transactions = await getTransactions(address);
-  let totalCost: number = 0;
-  // iterate over transactions on zk Node
-  transactions.forEach(
-    async (transaction: {
-      timeStamp: string | number | Date;
-      gasUsed: any;
-      gasPrice: any;
-      hash: string;
-    }) => {
-      const [date, unixTimestamp] = getDateString(transaction.timeStamp as number);
-      let price_usd = 2000;
-      // try {
-      //   price_usd = await new Promise<number>((resolve) =>
-      //     setTimeout(() => resolve(getHistoricalPrice(date)), 2000)
-      //   );
-      // } catch (error) {
-      //   price_usd = 2000;
-      //   console.error('An error occurred:', error);
-      // }
-      const ethGasPrice = await getGasPriceOnEth(unixTimestamp as number);
-      const gasUsed = transaction.gasUsed;
-      const gasPrice = transaction.gasPrice;
-      const txZkCostUSD = (gasUsed * gasPrice * price_usd) / 1e18;
-      const ethGasPriceEth = Utils.formatEther(ethGasPrice);
-      const txEthCostUSD = gasUsed * price_usd * ethGasPriceEth;
-      const shortHash =
-        transaction.hash.slice(0, 6) + "..." + transaction.hash.slice(-4);
-      console.log(
-        `Transaction ${shortHash} on ${date} zkCost ${txZkCostUSD} USD, ethCost ${txEthCostUSD} USD`
-      );
-      const toPrint: TransactionData = {
-        hash: transaction.hash,
-        shortHash,
-        date: String(date),
-        gasUsed,
-        zkGasPrice: (gasPrice / 1000000000).toFixed(4).toString(),
-        txZkCostUSD: txZkCostUSD.toFixed(4).toString(),
-        ethGasPrice: (ethGasPriceEth * 1000000000).toFixed(4).toString(),
-        txEthCostUSD,
-        diffUSD: txEthCostUSD - txZkCostUSD,
-        totalCost,
-      };
-      updateData(toPrint);
-    }
-  );
 }
 
 async function getGasPriceOnEth(targetTimestamp: number) {
@@ -146,9 +96,8 @@ async function getGasPriceOnEth(targetTimestamp: number) {
     transactions.transactions.length
   ) {
     console.log(
-
-    `Ethereum gasPrice for block ${blockNumber} and first Tx is ${transactions.transactions[0].gasPrice}`)
-
+      `Ethereum gasPrice for block ${blockNumber} and first Tx is ${transactions.transactions[0].gasPrice}`
+    );
   } else {
     console.log("No transactions found");
   }
@@ -157,12 +106,88 @@ async function getGasPriceOnEth(targetTimestamp: number) {
 
 function TransactionsTable({ address }: { address: string }) {
   const [data, setData] = useState<TransactionData[]>([]);
+  const [isLoadingTxs, setIsLoadingTxs] = useState<boolean>(true);
 
   useEffect(() => {
-    getTransactionData((transactionData) => {
-      setData((prevData) => [...prevData, transactionData]);
-    }, address);
-  }, [address]);
+    getTransactionData(address).then((data) => setData(data));
+    console.log("data", data);
+    setIsLoadingTxs(false);
+  }, [address, isLoadingTxs]);
+
+  useEffect(() => {
+    getEthPrice(data);
+  }, [isLoadingTxs]);
+
+  async function getTransactionData(address: string) {
+    const transactions = await getTransactions(address);
+    let totalCost: number = 0;
+    const parsedTransactions: TransactionData[] = [];
+    // iterate over transactions on zk Node
+    transactions.forEach(
+      async (transaction: {
+        timeStamp: string | number | Date;
+        gasUsed: any;
+        gasPrice: any;
+        hash: string;
+      }) => {
+        const [date, unixTimestamp] = getDateString(
+          transaction.timeStamp as number
+        );
+        let price_usd = 2000;
+        // try {
+        //   price_usd = await new Promise<number>((resolve) =>
+        //     setTimeout(() => resolve(getHistoricalPrice(date)), 2000)
+        //   );
+        // } catch (error) {
+        //   price_usd = 2000;
+        //   console.error('An error occurred:', error);
+        // }
+        const ethGasPrice = 0;
+        const gasUsed = transaction.gasUsed;
+        const gasPrice = transaction.gasPrice;
+        const txZkCostUSD = (gasUsed * gasPrice * price_usd) / 1e18;
+        const ethGasPriceEth = Utils.formatEther(ethGasPrice);
+        const txEthCostUSD = gasUsed * price_usd * ethGasPriceEth;
+        const shortHash =
+          transaction.hash.slice(0, 6) + "..." + transaction.hash.slice(-4);
+        console.log(
+          `Transaction ${shortHash} on ${date} zkCost ${txZkCostUSD} USD, ethCost ${txEthCostUSD} USD`
+        );
+        const parsedTx: TransactionData = {
+          hash: transaction.hash,
+          shortHash,
+          date: String(date),
+          unixTimestamp: Number(unixTimestamp),
+          gasUsed,
+          zkGasPrice: (gasPrice / 1000000000).toFixed(4).toString(),
+          txZkCostUSD: txZkCostUSD.toFixed(4).toString(),
+          ethGasPrice: (ethGasPriceEth * 1000000000).toFixed(4).toString(),
+          txEthCostUSD,
+          diffUSD: txEthCostUSD - txZkCostUSD,
+          totalCost,
+        };
+        // updateData(toPrint);
+        parsedTransactions.push(parsedTx);
+      }
+    );
+    setIsLoadingTxs(false);
+    return parsedTransactions;
+  }
+
+  async function getEthPrice(transactions: TransactionData[]) {
+    const updatedTransactions: TransactionData[] = [];
+
+    for (const transaction of transactions) {
+      const ethGasPrice = await getGasPriceOnEth(transaction.unixTimestamp);
+      const updatedTransaction: TransactionData = {
+        ...transaction,
+        ethGasPrice: (Number(ethGasPrice) / 1000000000).toFixed(4).toString(),
+      };
+      updatedTransactions.push(updatedTransaction);
+    }
+
+    setData(updatedTransactions);
+  }
 
   return (
     <>
@@ -177,9 +202,7 @@ function TransactionsTable({ address }: { address: string }) {
             <th>zk Gas Price (GWEI)</th>
             <th>Value in USD</th>
             <th className={styles.ethbg}>
-
               {/* <img src={eth} alt="Ethereum" style={{ height: '20px' }} /> */}
-
               Eth Gas Price (GWEI)
             </th>
             <th className={styles.ethbg}>
