@@ -8,6 +8,8 @@ import { use } from "react";
 const Home: NextPage = () => {
 
   const address: string | undefined = useAddress();
+  console.log("connected address", address);
+
   return (
     <main className={styles.main}>
       <div className={styles.container}>

@@ -26,6 +26,7 @@ const ETHERSCAN_API_KEY = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY;
 console.log("etherscan key set", !!ETHERSCAN_API_KEY);
 const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
 console.log("alchemy key set", !!ALCHEMY_API_KEY);
+const ETH_PRICE_USD = 2000;
 
 const alchemySettings = {
   apiKey: ALCHEMY_API_KEY,
@@ -138,7 +139,6 @@ function TransactionsTable({ address }: { address: string }) {
         const [date, unixTimestamp] = getDateString(
           transaction.timeStamp as number
         );
-        let price_usd = 2000;
         // try {
         //   price_usd = await new Promise<number>((resolve) =>
         //     setTimeout(() => resolve(getHistoricalPrice(date)), 2000)
@@ -147,17 +147,11 @@ function TransactionsTable({ address }: { address: string }) {
         //   price_usd = 2000;
         //   console.error('An error occurred:', error);
         // }
-        const ethGasPrice = 0;
         const gasUsed = transaction.gasUsed;
         const gasPrice = transaction.gasPrice;
-        const txZkCostUSD = (gasUsed * gasPrice * price_usd) / 1e18;
-        const ethGasPriceEth = Utils.formatEther(ethGasPrice);
-        const txEthCostUSD = gasUsed * price_usd * ethGasPriceEth;
+        const txZkCostUSD = (gasUsed * gasPrice * ETH_PRICE_USD) / 1e18;
         const shortHash =
           transaction.hash.slice(0, 6) + "..." + transaction.hash.slice(-4);
-        console.log(
-          `Transaction ${shortHash} on ${date} zkCost ${txZkCostUSD} USD, ethCost ${txEthCostUSD} USD`
-        );
         const parsedTx: TransactionData = {
           hash: transaction.hash,
           shortHash,
@@ -166,9 +160,9 @@ function TransactionsTable({ address }: { address: string }) {
           gasUsed,
           zkGasPrice: (gasPrice / 1000000000).toFixed(4).toString(),
           txZkCostUSD: txZkCostUSD.toFixed(4).toString(),
-          ethGasPrice: (ethGasPriceEth * 1000000000).toFixed(4).toString(),
-          txEthCostUSD,
-          diffUSD: txEthCostUSD - txZkCostUSD,
+          ethGasPrice: "0",
+          txEthCostUSD: 0,
+          diffUSD: -txZkCostUSD,
           totalCost,
         };
         // updateData(toPrint);
@@ -184,9 +178,14 @@ function TransactionsTable({ address }: { address: string }) {
 
     for (const transaction of transactions) {
       const ethGasPrice = await getGasPriceOnEth(transaction.unixTimestamp);
+      const ethGasPriceEth = Utils.formatEther(ethGasPrice);
+      const txEthCostUSD = Number(transaction.gasUsed) * ETH_PRICE_USD * ethGasPriceEth;
+      const diffUSD = txEthCostUSD - Number(transaction.txZkCostUSD);
       const updatedTransaction: TransactionData = {
         ...transaction,
         ethGasPrice: (Number(ethGasPrice) / 1000000000).toFixed(4).toString(),
+        txEthCostUSD,
+        diffUSD,
       };
       updatedTransactions.push(updatedTransaction);
     }
