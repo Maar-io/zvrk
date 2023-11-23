@@ -63,6 +63,19 @@ async function getGecko() {
   getData();
 }
 
+function getTimeDifference(targetTimestamp: number, blockTimestamp: number): string {
+  const targetDate = new Date(targetTimestamp * 1000); // Convert to milliseconds
+  const blockDate = new Date(blockTimestamp * 1000); // Convert to milliseconds
+
+  const differenceInSeconds = Math.abs(blockDate.getTime() - targetDate.getTime()) / 1000;
+
+  const hours = Math.floor(differenceInSeconds / 3600);
+  const minutes = Math.floor((differenceInSeconds % 3600) / 60);
+  const seconds = Math.floor(differenceInSeconds % 60);
+
+  return `Difference: ${hours}h, ${minutes}m, ${seconds}s`;
+}
+
 function getDateString(timestamp: number) {
   // const timestamp: number = parseInt(transaction.timeStamp.toString());
   const dateObject = new Date(timestamp * 1000);
@@ -77,28 +90,30 @@ function getDateString(timestamp: number) {
 }
 
 async function getGasPriceOnEth(targetTimestamp: number) {
-  const averageBlockTime = 15.1;
-  let block = await alchemy.core.getBlock("latest");
-  let blockNumber = block.number;
-  let blockTime = block.timestamp;
-  const decreaseBlocks = Math.floor(
-    (blockTime - targetTimestamp) / averageBlockTime
-  );
+  const averageBlockTime = 12.16;
+  let latestBlock = await alchemy.core.getBlock("latest");
+  let blockNumber = latestBlock.number - Math.floor((latestBlock.timestamp - targetTimestamp) / averageBlockTime);
+
+  // Get the block for the estimated block number
+  let block = await alchemy.core.getBlock(blockNumber);
+
+  // Estimate the block number again based on the difference
+  const decreaseBlocks = Math.floor((block.timestamp - targetTimestamp) / averageBlockTime);
   blockNumber -= decreaseBlocks;
 
-  // find blockhash to get first Tx.
+  // Get the block for the new estimated block number
   block = await alchemy.core.getBlock(blockNumber);
 
   // get gasPrice from the first transaction in this block
   const transactions = await alchemy.core.getBlockWithTransactions(block.hash);
+  // ...
   if (
     transactions &&
     transactions.transactions &&
     transactions.transactions.length
   ) {
-    console.log(
-      `Ethereum gasPrice for block ${blockNumber} and first Tx is ${transactions.transactions[0].gasPrice}`
-    );
+    const readableDate = new Date(targetTimestamp * 1000);
+    console.log(`using timestamp ${targetTimestamp} (${readableDate.toISOString()})read Eth block (${blockNumber}). Tx[0].gasPrice=${transactions.transactions[0].gasPrice} Time difference: ${getTimeDifference(targetTimestamp, block.timestamp)}`);
   } else {
     console.log("No transactions found");
   }
@@ -227,7 +242,7 @@ function TransactionsTable({ address }: { address: string }) {
     Hey there! You've made {transactionsCount} transactions with this address and used up {totalGasUsed} gas.
   </p>
   <p style={{ fontSize: '1.5em', whiteSpace: 'pre-wrap', textAlign: 'center' }}>
-    That cost you ${totalTxZkCostUSD.toFixed(2)} on Astar zkEVM.
+    That cost you ${totalTxZkCostUSD.toFixed(3)} on Astar zkEVM.
   </p>
   <p style={{ fontSize: '1.5em', whiteSpace: 'pre-wrap', textAlign: 'center' }}>
     If you had done the same transactions on the Ethereum mainnet, it would have cost you ${totalTxEthCostUSD.toFixed(2)}.
