@@ -61,7 +61,6 @@ async function getGecko() {
   getData();
 }
 
-
 function getDateString(timestamp: number) {
   // const timestamp: number = parseInt(transaction.timeStamp.toString());
   const dateObject = new Date(timestamp * 1000);
@@ -107,16 +106,22 @@ async function getGasPriceOnEth(targetTimestamp: number) {
 function TransactionsTable({ address }: { address: string }) {
   const [data, setData] = useState<TransactionData[]>([]);
   const [isLoadingTxs, setIsLoadingTxs] = useState<boolean>(true);
+  const [ethPriceFetched, setEthPriceFetched] = useState<boolean>(false);
 
   useEffect(() => {
-    getTransactionData(address).then((data) => setData(data));
+    getTransactionData(address).then((data) => {
+      setData(data);
+      setIsLoadingTxs(false);
+    });
     console.log("data", data);
-    setIsLoadingTxs(false);
-  }, [address, isLoadingTxs]);
+  }, [address]);
 
   useEffect(() => {
-    getEthPrice(data);
-  }, [isLoadingTxs]);
+    if (!isLoadingTxs && !ethPriceFetched) {
+      getEthPrice(data);
+      setEthPriceFetched(true);
+    }
+  }, [isLoadingTxs, data]);
 
   async function getTransactionData(address: string) {
     const transactions = await getTransactions(address);
